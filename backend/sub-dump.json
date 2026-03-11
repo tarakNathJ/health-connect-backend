@@ -1,0 +1,15 @@
+{
+  "_id": "69aea37c9c2ee6ddda3c4d47",
+  "userId": "6815d95e6a57c6e0aa5a9a88",
+  "plan": "pro",
+  "billingCycle": "sixMonths",
+  "endDate": "2026-09-05T10:39:56.549Z",
+  "status": "inactive",
+  "paymentId": "69aea37c9c2ee6ddda3c4d45",
+  "razorpayOrderId": "order_SP661kvOZq1uDq",
+  "amount": 899,
+  "startDate": "2026-03-09T10:39:56.551Z",
+  "createdAt": "2026-03-09T10:39:56.553Z",
+  "updatedAt": "2026-03-09T10:39:56.553Z",
+  "__v": 0
+}
