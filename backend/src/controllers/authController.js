@@ -458,6 +458,46 @@ export const getDoctorProfile = async (req, res) => {
 
 }
 
+export const updateDoctorProfile = async (req, res) => {
+    try {
+        const { doctorId, ...updateData } = req.body;
+
+        if (!doctorId) {
+            return res.status(400).json({ message: 'Doctor ID is required' });
+        }
+
+        const doctor = await Doctor.findById(doctorId);
+        if (!doctor) {
+            return res.status(404).json({ message: 'Doctor not found' });
+        }
+
+        // Update allowed fields
+        const allowedFields = [
+            'firstName', 'lastName', 'specialty', 'subspecialties',
+            'hospital', 'location', 'experience', 'bio',
+            'education', 'certifications', 'specializations',
+            'availability', 'contactInfo'
+        ];
+
+        allowedFields.forEach(field => {
+            if (updateData[field] !== undefined) {
+                doctor[field] = updateData[field];
+            }
+        });
+
+        const updatedDoctor = await doctor.save();
+
+        return res.status(200).json({
+            message: 'Profile updated successfully',
+            doctor: updatedDoctor
+        });
+
+    } catch (error) {
+        console.error('Error in updateDoctorProfile:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+}
+
 export const cancelSubscription = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);

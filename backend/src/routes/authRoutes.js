@@ -13,6 +13,7 @@ import {
     getAllmessage,
     getAllDoctor,
     getDoctorProfile,
+    updateDoctorProfile,
     cancelSubscription,
     googleLogin
 } from '../controllers/authController.js';
@@ -140,6 +141,7 @@ router.post('/messageForDoctor', protect, messageForDoctor);
 router.post('/getAllmessage', getAllmessage);
 router.get('/getAlldoctor', getAllDoctor);
 router.post('/getDoctorProfile', getDoctorProfile);
+router.put('/updateDoctorProfile', updateDoctorProfile);
 router.post('/BarcodeSearchResult', BarcodeSearchResult);
 
 export default router; 
