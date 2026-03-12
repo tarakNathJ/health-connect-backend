@@ -38,7 +38,7 @@ app.use('/api/payment', paymentRouter);
 
 // Base route
 app.get('/', (req, res) => {
-    res.send('HealthConnect API is running...');
+    res.send('MediBridge API is running...');
 });
 
 // // Error handling middleware

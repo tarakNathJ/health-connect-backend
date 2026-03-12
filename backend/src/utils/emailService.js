@@ -28,19 +28,19 @@ export const sendPasswordResetEmail = async (email, resetLink) => {
         }
 
         const mailOptions = {
-            from: `"HealthConnect Support" <${process.env.EMAIL_USER}>`,
+            from: `"MediBridge Support" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: 'Reset Your HealthConnect Password',
+            subject: 'Reset Your MediBridge Password',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e1e4e8; border-radius: 8px; overflow: hidden;">
                     <div style="background-color: #f8f9fc; padding: 20px; text-align: center; border-bottom: 1px solid #e1e4e8;">
-                        <h1 style="color: #4f46e5; margin: 0;">HealthConnect</h1>
+                        <h1 style="color: #4f46e5; margin: 0;">MediBridge</h1>
                     </div>
                     <div style="padding: 30px; background-color: #ffffff;">
                         <h2 style="color: #333333; margin-top: 0;">Password Reset Request</h2>
                         <p style="color: #555555; font-size: 16px; line-height: 1.5;">
                             Hello, <br><br>
-                            We received a request to reset the password for your HealthConnect account associated with this email address. 
+                            We received a request to reset the password for your MediBridge account associated with this email address. 
                             If you made this request, please click the button below to securely create a new password:
                         </p>
                         <div style="text-align: center; margin: 30px 0;">
@@ -54,7 +54,7 @@ export const sendPasswordResetEmail = async (email, resetLink) => {
                         </p>
                     </div>
                     <div style="background-color: #f8f9fc; padding: 15px; text-align: center; border-top: 1px solid #e1e4e8; font-size: 12px; color: #888888;">
-                        &copy; ${new Date().getFullYear()} HealthConnect. All rights reserved.
+                        &copy; ${new Date().getFullYear()} MediBridge. All rights reserved.
                     </div>
                 </div>
             `
@@ -83,19 +83,19 @@ export const sendPasswordChangedEmail = async (email) => {
         }
 
         const mailOptions = {
-            from: `"HealthConnect Support" <${process.env.EMAIL_USER}>`,
+            from: `"MediBridge Support" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: 'Your HealthConnect Password Has Been Changed',
+            subject: 'Your MediBridge Password Has Been Changed',
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e1e4e8; border-radius: 8px; overflow: hidden;">
                     <div style="background-color: #f8f9fc; padding: 20px; text-align: center; border-bottom: 1px solid #e1e4e8;">
-                        <h1 style="color: #4f46e5; margin: 0;">HealthConnect</h1>
+                        <h1 style="color: #4f46e5; margin: 0;">MediBridge</h1>
                     </div>
                     <div style="padding: 30px; background-color: #ffffff;">
                         <h2 style="color: #333333; margin-top: 0;">Password Successfully Changed</h2>
                         <p style="color: #555555; font-size: 16px; line-height: 1.5;">
                             Hello, <br><br>
-                            This is a confirmation that the password for your HealthConnect account has been successfully updated.
+                            This is a confirmation that the password for your MediBridge account has been successfully updated.
                         </p>
                         <div style="text-align: center; margin: 30px 0;">
                             <span style="font-size: 40px; color: #10b981;">&#10003;</span>
@@ -106,7 +106,7 @@ export const sendPasswordChangedEmail = async (email) => {
                         </p>
                     </div>
                     <div style="background-color: #f8f9fc; padding: 15px; text-align: center; border-top: 1px solid #e1e4e8; font-size: 12px; color: #888888;">
-                        &copy; ${new Date().getFullYear()} HealthConnect. All rights reserved.
+                        &copy; ${new Date().getFullYear()} MediBridge. All rights reserved.
                     </div>
                 </div>
             `

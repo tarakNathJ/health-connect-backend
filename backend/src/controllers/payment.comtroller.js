@@ -70,7 +70,7 @@ export const createOrder = async (req, res) => {
                 p.item.currency === 'INR' &&
                 p.period === period &&
                 p.interval === interval &&
-                p.item.name === `Health Connect ${plan} ${billingCycle}`
+                p.item.name === `MediBridge ${plan} ${billingCycle}`
             );
 
             if (existingPlan) {
@@ -80,10 +80,10 @@ export const createOrder = async (req, res) => {
                     period: period,
                     interval: interval,
                     item: {
-                        name: `Health Connect ${plan} ${billingCycle}`,
+                        name: `MediBridge ${plan} ${billingCycle}`,
                         amount: amount * 100,
                         currency: 'INR',
-                        description: `Health Connect ${plan} Tier (${billingCycle})`
+                        description: `MediBridge ${plan} Tier (${billingCycle})`
                     }
                 });
                 planId = newPlan.id;
