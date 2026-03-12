@@ -377,7 +377,7 @@ export const messageForDoctor = async (req, res) => {
         }
         const create_message = await Messges.create({
             userId: user._id,
-            doctorId: findDoctor,
+            doctorId: findDoctor._id,
             patienEmail: user.email,
             patienName: user.name,
             Messges: messges,
