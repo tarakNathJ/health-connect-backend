@@ -447,3 +447,181 @@ export const startTrial = async (req, res) => {
         });
     }
 };
+
+// ─── Appointment Payment Controllers ────────────────────────────────────────
+import Appointment from '../models/Appointment.js';
+import Doctor from '../models/doctor.models.js';
+
+/**
+ * @desc    Create a ₹300 Razorpay order for a single appointment booking.
+ *          Only Lite and Pro users can call this. Free users get 403.
+ *          Pro users bypass payment (appointment is free with subscription).
+ * @route   POST /api/payment/create-appointment-order
+ * @access  Private
+ */
+export const createAppointmentOrder = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const { doctorId, appointmentDate } = req.body;
+        if (!doctorId || !appointmentDate) {
+            return res.status(400).json({ message: 'doctorId and appointmentDate are required' });
+        }
+
+        // ── Tier enforcement ──────────────────────────────────────────────
+        if (user.tier === 'free') {
+            return res.status(403).json({
+                message: 'Appointment booking requires a Lite or Pro subscription.',
+                upgradeRequired: true,
+            });
+        }
+
+        const doctor = await Doctor.findById(doctorId);
+        if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
+
+        const doctorName = `Dr. ${doctor.firstName} ${doctor.lastName}`;
+        const parsedDate = new Date(appointmentDate);
+
+        // ── Pro users: appointment included in subscription ───────────────
+        if (user.tier === 'pro') {
+            const appointment = await Appointment.create({
+                userId: user._id,
+                doctorId,
+                doctorName,
+                appointmentDate: parsedDate,
+                status: 'confirmed',
+                requiresPayment: false,
+                amount: 0,
+            });
+
+            return res.status(201).json({
+                success: true,
+                requiresPayment: false,
+                appointment: {
+                    id: appointment._id,
+                    doctorName: appointment.doctorName,
+                    appointmentDate: appointment.appointmentDate,
+                    status: appointment.status,
+                },
+                message: 'Appointment confirmed — included in your Pro subscription.',
+            });
+        }
+
+        // ── Lite users: create ₹300 Razorpay order ───────────────────────
+        const APPOINTMENT_FEE_PAISE = 30000; // ₹300 in paise
+
+        const razorpayOrder = await razorpay.orders.create({
+            amount: APPOINTMENT_FEE_PAISE,
+            currency: 'INR',
+            receipt: `appt_${Date.now()}`,
+            notes: {
+                userId: user._id.toString(),
+                doctorId,
+                appointmentDate: parsedDate.toISOString(),
+                type: 'appointment',
+            },
+        });
+
+        // Save pending appointment record
+        const appointment = await Appointment.create({
+            userId: user._id,
+            doctorId,
+            doctorName,
+            appointmentDate: parsedDate,
+            status: 'pending',
+            requiresPayment: true,
+            amount: 300,
+            currency: 'INR',
+            paymentOrderId: razorpayOrder.id,
+        });
+
+        return res.status(201).json({
+            success: true,
+            requiresPayment: true,
+            orderId: razorpayOrder.id,
+            amount: APPOINTMENT_FEE_PAISE,
+            currency: 'INR',
+            appointmentId: appointment._id,
+            doctorName,
+            appointmentDate: parsedDate,
+        });
+
+    } catch (error) {
+        console.error('Error creating appointment order:', error);
+        res.status(500).json({ success: false, message: 'Failed to create appointment order', error: error.message });
+    }
+};
+
+/**
+ * @desc    Verify Razorpay payment signature and confirm the appointment.
+ * @route   POST /api/payment/verify-appointment-payment
+ * @access  Private
+ */
+export const verifyAppointmentPayment = async (req, res) => {
+    try {
+        const { razorpayOrderId, razorpayPaymentId, razorpaySignature, appointmentId } = req.body;
+
+        if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature || !appointmentId) {
+            return res.status(400).json({ message: 'All payment fields are required' });
+        }
+
+        // ── HMAC-SHA256 signature verification ───────────────────────────
+        const expectedSignature = crypto
+            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+            .digest('hex');
+
+        if (expectedSignature !== razorpaySignature) {
+            return res.status(400).json({
+                success: false,
+                message: 'Payment verification failed. Invalid signature.',
+            });
+        }
+
+        // ── Update appointment record ─────────────────────────────────────
+        const appointment = await Appointment.findOneAndUpdate(
+            { _id: appointmentId, userId: req.user._id, paymentOrderId: razorpayOrderId },
+            {
+                status: 'confirmed',
+                paymentId: razorpayPaymentId,
+                razorpaySignature,
+            },
+            { new: true }
+        );
+
+        if (!appointment) {
+            return res.status(404).json({ message: 'Appointment not found or does not belong to this user' });
+        }
+
+        return res.json({
+            success: true,
+            message: 'Payment verified. Appointment confirmed.',
+            appointment: {
+                id: appointment._id,
+                doctorName: appointment.doctorName,
+                appointmentDate: appointment.appointmentDate,
+                status: appointment.status,
+            },
+        });
+
+    } catch (error) {
+        console.error('Error verifying appointment payment:', error);
+        res.status(500).json({ success: false, message: 'Payment verification failed', error: error.message });
+    }
+};
+
+/**
+ * @desc    Get all appointments for the logged-in user.
+ * @route   GET /api/payment/appointments
+ * @access  Private
+ */
+export const getUserAppointments = async (req, res) => {
+    try {
+        const appointments = await Appointment.find({ userId: req.user._id }).sort({ appointmentDate: 1 });
+        return res.json({ success: true, appointments });
+    } catch (error) {
+        console.error('Error fetching appointments:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch appointments' });
+    }
+};
