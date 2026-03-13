@@ -7,8 +7,7 @@ const appointmentSchema = new mongoose.Schema({
         required: true,
     },
     doctorId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Doctor',
+        type: String,  // Supabase UUID — doctors are NOT in MongoDB
         required: true,
     },
     doctorName: {
