@@ -225,10 +225,25 @@ export const verifyPayment = async (req, res) => {
         subscription.razorpayPaymentId = razorpay_payment_id;
         await subscription.save();
 
-        // Update user tier
+        // Calculate credits to grant based on billing cycle
+        let creditsToGrant = 0;
+        if (subscription.plan === 'pro') {
+            switch (subscription.billingCycle) {
+                case 'weekly': creditsToGrant = 1; break;
+                case 'monthly': creditsToGrant = 2; break;
+                case 'sixMonths': creditsToGrant = 15; break;
+                case 'yearly': creditsToGrant = 30; break;
+                default: creditsToGrant = 2; break; // fallback
+            }
+        }
+
+        // Update user tier and add appointment credits
         const updatedUser = await User.findByIdAndUpdate(
             req.user._id,
-            { tier: subscription.plan },
+            { 
+                $set: { tier: subscription.plan },
+                $inc: { appointmentCredits: creditsToGrant } 
+            },
             { new: true }
         );
 
@@ -243,6 +258,7 @@ export const verifyPayment = async (req, res) => {
             success: true,
             message: 'Payment verified and subscription activated successfully',
             tier: subscription.plan,
+            appointmentCredits: updatedUser.appointmentCredits,
             subscription: {
                 plan: subscription.plan,
                 billingCycle: subscription.billingCycle,
@@ -282,11 +298,14 @@ export const getSubscriptionStatus = async (req, res) => {
             status: 'active'
         }).sort({ createdAt: -1 });
 
+        const user = await User.findById(req.user._id);
+
         if (!subscription) {
             return res.status(200).json({
                 success: true,
                 subscription: null,
                 tier: req.user.tier || 'free',
+                appointmentCredits: user ? user.appointmentCredits : 0,
             });
         }
 
@@ -323,6 +342,7 @@ export const getSubscriptionStatus = async (req, res) => {
                 status: subscription.status,
             },
             tier: subscription.plan,
+            appointmentCredits: user ? user.appointmentCredits : 0,
         });
 
     } catch (error) {
@@ -371,6 +391,7 @@ export const cancelSubscriptionPayment = async (req, res) => {
             success: true,
             message: 'Subscription cancelled successfully. You have been moved to the Free tier.',
             tier: 'free',
+            appointmentCredits: updatedUser.appointmentCredits,
         });
 
     } catch (error) {
@@ -423,13 +444,21 @@ export const startTrial = async (req, res) => {
         });
         await subscription.save();
 
-        // Upgrade user tier to pro in the User record
-        await User.findByIdAndUpdate(req.user._id, { tier: 'pro' });
+        // Upgrade user tier to pro and grant 1 trial credit
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id, 
+            { 
+                $set: { tier: 'pro' },
+                $inc: { appointmentCredits: 1 } 
+            },
+            { new: true }
+        );
 
         res.status(200).json({
             success: true,
-            message: '3-day Pro trial started successfully!',
+            message: '3-day Pro trial started successfully! 1 Free Consultation Credit has been added to your account.',
             tier: 'pro',
+            appointmentCredits: updatedUser.appointmentCredits,
             subscription: {
                 plan: 'pro',
                 billingCycle: 'trial',
@@ -481,8 +510,12 @@ export const createAppointmentOrder = async (req, res) => {
         const resolvedDoctorName = doctorName || 'Doctor';
         const parsedDate = new Date(appointmentDate);
 
-        // ── Pro users: appointment included in subscription ───────────────
-        if (user.tier === 'pro') {
+        // ── Pro users w/ Credits: appointment included in subscription ───────────────
+        if (user.tier === 'pro' && user.appointmentCredits > 0) {
+            // Decrement credit immediately
+            user.appointmentCredits -= 1;
+            await user.save();
+
             const appointment = await Appointment.create({
                 userId: user._id,
                 doctorId,
@@ -502,12 +535,15 @@ export const createAppointmentOrder = async (req, res) => {
                     appointmentDate: appointment.appointmentDate,
                     status: appointment.status,
                 },
-                message: 'Appointment confirmed — included in your Pro subscription.',
+                message: 'Appointment confirmed — 1 Consultation Credit used.',
+                appointmentCredits: user.appointmentCredits
             });
         }
 
-        // ── Lite users: create ₹300 Razorpay order ───────────────────────
-        const APPOINTMENT_FEE_PAISE = 30000; // ₹300 in paise
+        // ── Lite users or Pro users out of credits: create Razorpay order ───────────────────────
+        // Pro users get a discounted rate of ₹99, while others pay the standard ₹299
+        const baseFee = user.tier === 'pro' ? 99 : 299;
+        const APPOINTMENT_FEE_PAISE = baseFee * 100;
 
         const razorpayOrder = await razorpay.orders.create({
             amount: APPOINTMENT_FEE_PAISE,
@@ -529,7 +565,7 @@ export const createAppointmentOrder = async (req, res) => {
             appointmentDate: parsedDate,
             status: 'pending',
             requiresPayment: true,
-            amount: 300,
+            amount: baseFee,
             currency: 'INR',
             paymentOrderId: razorpayOrder.id,
         });

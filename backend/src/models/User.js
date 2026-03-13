@@ -37,6 +37,10 @@ const userSchema = new mongoose.Schema(
         emailVerified: {
             type: Boolean,
             default: false
+        },
+        appointmentCredits: {
+            type: Number,
+            default: 0
         }
     },
     {

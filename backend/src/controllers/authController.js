@@ -81,6 +81,7 @@ export const loginUser = async (req, res) => {
                 email: user.email,
                 isAdmin: user.isAdmin,
                 tier: user.tier,
+                appointmentCredits: user.appointmentCredits,
                 token: generateToken(user._id),
             });
         } else {
@@ -106,9 +107,9 @@ export const getUserProfile = async (req, res) => {
                 _id: user._id,
                 name: user.name,
                 email: user.email,
-                isAdmin: user.isAdmin,
                 profileImage: user.profileImage,
                 tier: user.tier,
+                appointmentCredits: user.appointmentCredits,
                 createdAt: user.createdAt
             });
         } else {
