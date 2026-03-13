@@ -7,7 +7,7 @@ import User from '../models/User.js';
 import razorpay from '../utils/razorpayinstance.js';
 import Subscription from '../models/subscription.module.js';
 import Appointment from '../models/Appointment.js';
-import Doctor from '../models/doctor.models.js';
+import Doctor from '../models/DoctorProfile.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
