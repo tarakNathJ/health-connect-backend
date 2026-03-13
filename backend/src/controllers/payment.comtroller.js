@@ -464,7 +464,7 @@ export const createAppointmentOrder = async (req, res) => {
         const user = await User.findById(req.user._id);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const { doctorId, appointmentDate } = req.body;
+        const { doctorId, appointmentDate, doctorName } = req.body;
         if (!doctorId || !appointmentDate) {
             return res.status(400).json({ message: 'doctorId and appointmentDate are required' });
         }
@@ -477,10 +477,8 @@ export const createAppointmentOrder = async (req, res) => {
             });
         }
 
-        const doctor = await Doctor.findById(doctorId);
-        if (!doctor) return res.status(404).json({ message: 'Doctor not found' });
-
-        const doctorName = `Dr. ${doctor.firstName} ${doctor.lastName}`;
+        // Doctors are stored in Supabase, not MongoDB — accept name from frontend
+        const resolvedDoctorName = doctorName || 'Doctor';
         const parsedDate = new Date(appointmentDate);
 
         // ── Pro users: appointment included in subscription ───────────────
@@ -488,7 +486,7 @@ export const createAppointmentOrder = async (req, res) => {
             const appointment = await Appointment.create({
                 userId: user._id,
                 doctorId,
-                doctorName,
+                doctorName: resolvedDoctorName,
                 appointmentDate: parsedDate,
                 status: 'confirmed',
                 requiresPayment: false,
@@ -527,7 +525,7 @@ export const createAppointmentOrder = async (req, res) => {
         const appointment = await Appointment.create({
             userId: user._id,
             doctorId,
-            doctorName,
+            doctorName: resolvedDoctorName,
             appointmentDate: parsedDate,
             status: 'pending',
             requiresPayment: true,
@@ -543,7 +541,7 @@ export const createAppointmentOrder = async (req, res) => {
             amount: APPOINTMENT_FEE_PAISE,
             currency: 'INR',
             appointmentId: appointment._id,
-            doctorName,
+            doctorName: resolvedDoctorName,
             appointmentDate: parsedDate,
         });
 
