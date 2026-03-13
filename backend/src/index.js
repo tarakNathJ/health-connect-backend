@@ -18,12 +18,31 @@ const app = express();
 const PORT = config.port;
 
 // Middleware
+// Allowed origins — add new deployment URLs here
+const allowedOrigins = [
+    'https://medibridgeofficial.vercel.app',
+    'https://health-connect-app-main.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:8080',
+];
+
 app.use(cors({
-    origin: true,
+    origin: (origin, callback) => {
+        // Allow requests with no origin (Postman, server-to-server)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        // Also allow any vercel.app subdomain for preview deployments
+        if (origin.endsWith('.vercel.app')) return callback(null, true);
+        return callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}))
+    allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
+// Explicitly handle preflight for all routes (required for Vercel serverless)
+app.options('*', cors());
 app.use(express.json());
 
 // Logging middleware
