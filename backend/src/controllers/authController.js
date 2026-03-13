@@ -548,6 +548,11 @@ export const googleLogin = async (req, res) => {
         let user = await User.findOne({ email });
 
         if (user) {
+            // If the user has no profile image yet, save their Google photo
+            if (!user.profileImage && picture) {
+                user.profileImage = picture;
+                await user.save();
+            }
             // User exists, just log them in
             res.json({
                 _id: user._id,
