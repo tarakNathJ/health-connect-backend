@@ -6,6 +6,8 @@ import Payment from '../models/Payment.module.js';
 import User from '../models/User.js';
 import razorpay from '../utils/razorpayinstance.js';
 import Subscription from '../models/subscription.module.js';
+import Appointment from '../models/Appointment.js';
+import Doctor from '../models/doctor.models.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -449,8 +451,6 @@ export const startTrial = async (req, res) => {
 };
 
 // ─── Appointment Payment Controllers ────────────────────────────────────────
-import Appointment from '../models/Appointment.js';
-import Doctor from '../models/doctor.models.js';
 
 /**
  * @desc    Create a ₹300 Razorpay order for a single appointment booking.
