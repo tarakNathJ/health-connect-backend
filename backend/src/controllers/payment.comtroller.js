@@ -380,3 +380,70 @@ export const cancelSubscriptionPayment = async (req, res) => {
         });
     }
 };
+
+/**
+ * @desc    Start a 3-day free Pro trial (one per user, enforced on the server)
+ * @route   POST /api/payment/start-trial
+ * @access  Private
+ */
+export const startTrial = async (req, res) => {
+    try {
+        if (!req.user || !req.user._id) {
+            return res.status(401).json({ success: false, message: 'User not authenticated' });
+        }
+
+        // SECURITY: Check if this user has EVER had a trial (in the database)
+        const existingTrial = await Subscription.findOne({
+            userId: req.user._id,
+            billingCycle: 'trial',
+        });
+
+        if (existingTrial) {
+            return res.status(400).json({
+                success: false,
+                message: 'You have already used your free trial. Please choose a paid plan.',
+                trialAlreadyUsed: true,
+            });
+        }
+
+        // Create a 3-day trial subscription record
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + 3);
+
+        const subscription = new Subscription({
+            userId: req.user._id,
+            plan: 'pro',
+            billingCycle: 'trial',
+            amount: 0,
+            startDate: new Date(),
+            endDate: trialEndDate,
+            status: 'active',
+        });
+        await subscription.save();
+
+        // Upgrade user tier to pro in the User record
+        await User.findByIdAndUpdate(req.user._id, { tier: 'pro' });
+
+        res.status(200).json({
+            success: true,
+            message: '3-day Pro trial started successfully!',
+            tier: 'pro',
+            subscription: {
+                plan: 'pro',
+                billingCycle: 'trial',
+                startDate: subscription.startDate,
+                endDate: trialEndDate,
+                daysLeft: 3,
+                status: 'active',
+            },
+        });
+
+    } catch (error) {
+        console.error('Error starting trial:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to start trial',
+            error: error.message,
+        });
+    }
+};

@@ -166,30 +166,19 @@ export const updateUserProfile = async (req, res) => {
  */
 export const updateUserTier = async (req, res) => {
     try {
-        console.log('[TIER UPDATE] Request received:', {
-            user: req.user?._id,
-            body: req.body
-        });
-
         const { tier } = req.body;
 
-        // Validate tier value
-        if (!['free', 'lite', 'pro'].includes(tier)) {
-            console.log('[TIER UPDATE] Invalid tier value:', tier);
-            return res.status(400).json({ message: 'Invalid tier value. Must be free, lite, or pro.' });
+        // SECURITY: This endpoint is ONLY for downgrading to free.
+        // Upgrades to lite/pro must go through verifyPayment (Razorpay).
+        if (tier !== 'free') {
+            return res.status(403).json({ message: 'Forbidden: tier upgrades must go through payment verification.' });
         }
 
-        console.log('[TIER UPDATE] Looking for user with ID:', req.user?._id);
         const user = await User.findById(req.user._id);
 
         if (user) {
-            console.log('[TIER UPDATE] User found, current tier:', user.tier);
-            console.log('[TIER UPDATE] Updating to new tier:', tier);
-
             user.tier = tier;
             const updatedUser = await user.save();
-
-            console.log('[TIER UPDATE] Tier updated successfully to:', updatedUser.tier);
 
             res.json({
                 _id: updatedUser._id,
