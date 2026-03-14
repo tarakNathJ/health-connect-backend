@@ -179,6 +179,16 @@ export const verifyPayment = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Payment record not found' });
         }
 
+        if (payment.status === 'completed') {
+            return res.status(400).json({ success: false, message: 'Payment is already marked as completed' });
+        }
+
+        const providedOrderId = razorpay_subscription_id || razorpay_order_id;
+        if (payment.OrderId !== providedOrderId) {
+            console.error(`Security Alert: Order mismatch in verifyPayment. Expected ${payment.OrderId}, got ${providedOrderId}`);
+            return res.status(400).json({ success: false, message: 'Order ID mismatch. Possible replay attack.' });
+        }
+
         const subscription = await Subscription.findById(subscriptionId);
         if (!subscription) {
             return res.status(404).json({ success: false, message: 'Subscription record not found' });
@@ -657,5 +667,119 @@ export const getUserAppointments = async (req, res) => {
     } catch (error) {
         console.error('Error fetching appointments:', error);
         res.status(500).json({ success: false, message: 'Failed to fetch appointments' });
+    }
+};
+
+/**
+ * @desc    Handle Razorpay Webhooks (recurring payments, cancellations)
+ * @route   POST /api/payment/webhook
+ * @access  Public
+ */
+export const handleRazorpayWebhook = async (req, res) => {
+    try {
+        const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+        const signature = req.headers['x-razorpay-signature'];
+        
+        if (!webhookSecret) {
+            console.error('RAZORPAY_WEBHOOK_SECRET is not set');
+            return res.status(500).send('Webhook secret not configured');
+        }
+
+        // Verify webhook signature
+        const expectedSignature = crypto
+            .createHmac('sha256', webhookSecret)
+            .update(JSON.stringify(req.body))
+            .digest('hex');
+
+        if (expectedSignature !== signature) {
+            console.warn('Webhook signature mismatch');
+            return res.status(400).send('Invalid signature');
+        }
+
+        const event = req.body;
+        console.log(`Received Razorpay Webhook: ${event.event}`);
+
+        if (event.event === 'subscription.charged') {
+            const subscriptionInfo = event.payload.subscription.entity;
+            const paymentInfo = event.payload.payment.entity;
+            
+            // Find subscription by razorpayOrderId
+            const subscription = await Subscription.findOne({ razorpayOrderId: subscriptionInfo.id });
+            
+            if (subscription) {
+                // Determine new end date based on billing cycle
+                const now = new Date();
+                let newEndDate = new Date(subscription.endDate);
+                if (newEndDate <= now) {
+                    newEndDate = now; // If it already expired, calculate from now
+                }
+                
+                let durationDays = 30; // default monthly
+                switch (subscription.billingCycle) {
+                    case 'weekly': durationDays = 7; break;
+                    case 'monthly': durationDays = 30; break;
+                    case 'sixMonths': durationDays = 180; break;
+                    case 'yearly': durationDays = 365; break;
+                }
+                
+                newEndDate = new Date(newEndDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+                
+                subscription.endDate = newEndDate;
+                subscription.status = 'active';
+                await subscription.save();
+
+                // Grant credits matching existing logic in verifyPayment
+                let creditsToGrant = 0;
+                if (subscription.plan === 'pro') {
+                    switch (subscription.billingCycle) {
+                        case 'weekly': creditsToGrant = 1; break;
+                        case 'monthly': creditsToGrant = 2; break;
+                        case 'sixMonths': creditsToGrant = 15; break;
+                        case 'yearly': creditsToGrant = 30; break;
+                        default: creditsToGrant = 2; break;
+                    }
+                }
+                
+                // Need to ensure the user is upgraded (or maintains plan) and gets credits
+                await User.findByIdAndUpdate(subscription.userId, {
+                    $set: { tier: subscription.plan },
+                    $inc: { appointmentCredits: creditsToGrant } 
+                });
+                
+                // Add new payment record
+                await Payment.create({
+                    userId: subscription.userId,
+                    amount: paymentInfo.amount / 100,
+                    currency: paymentInfo.currency,
+                    OrderId: subscriptionInfo.id,
+                    paymentId: paymentInfo.id,
+                    status: 'completed',
+                    signature: 'webhook',
+                });
+                
+                console.log(`Successfully processed subscription.charged for sub ${subscriptionInfo.id}`);
+            } else {
+                console.warn(`Subscription not found for ID: ${subscriptionInfo.id}`);
+            }
+        } else if (event.event === 'subscription.cancelled' || event.event === 'subscription.halted') {
+            const subscriptionInfo = event.payload.subscription.entity;
+            const subscription = await Subscription.findOne({ razorpayOrderId: subscriptionInfo.id });
+            
+            if (subscription) {
+                subscription.status = 'cancelled';
+                await subscription.save();
+                
+                // Downgrade user back to free if this is their active subscription
+                await User.findByIdAndUpdate(subscription.userId, {
+                    $set: { tier: 'free' }
+                });
+                console.log(`Successfully processed ${event.event} for sub ${subscriptionInfo.id}`);
+            }
+        }
+
+        res.status(200).send('Webhook processed');
+    } catch (error) {
+        console.error('Error handling webhook:', error);
+        res.status(500).send('Internal server error');
     }
 };
