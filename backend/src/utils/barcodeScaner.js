@@ -124,8 +124,6 @@ const searchGoogle = async (productJSON) => {
         const response = await ai.models.generateContent({
             model: config.googleGenAIModel,
             contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-
-            stopSequences: ["\n"],
         });
         return response.text;
 
