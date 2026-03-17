@@ -500,8 +500,21 @@ export const startTrial = async (req, res) => {
  */
 export const createAppointmentOrder = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
+        let user = await User.findById(req.user._id);
         if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // Auto-expire check just in case it wasn't caught by the frontend
+        if (user.tier !== 'free') {
+            const activeSub = await Subscription.findOne({ userId: user._id, status: 'active' }).sort({ createdAt: -1 });
+            if (!activeSub || (activeSub.endDate && new Date() > activeSub.endDate)) {
+                if (activeSub) {
+                    activeSub.status = 'expired';
+                    await activeSub.save();
+                }
+                user.tier = 'free';
+                await user.save();
+            }
+        }
 
         const { doctorId, appointmentDate, doctorName } = req.body;
         if (!doctorId || !appointmentDate) {
