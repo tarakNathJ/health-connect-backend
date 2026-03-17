@@ -8,6 +8,7 @@ import authRoutes from './routes/authRoutes.js';
 import passwordRoutes from './routes/passwordRoutes.js';
 import paymentRouter from './routes/paymentRouter.js';
 import healthProfileRoutes from './routes/healthProfileRoutes.js';
+import wellnessRoutes from './routes/wellnessRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -56,6 +57,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/password', passwordRoutes);
 app.use('/api/payment', paymentRouter);
 app.use('/api/health-profile', healthProfileRoutes);
+app.use('/api/wellness', wellnessRoutes);
 
 // Base route
 app.get('/', (req, res) => {
