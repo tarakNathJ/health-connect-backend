@@ -6,6 +6,7 @@ import connectDB from '../src/config/db.js';
 import authRoutes from '../src/routes/authRoutes.js';
 import passwordRoutes from '../src/routes/passwordRoutes.js';
 import paymentRouter from '../src/routes/paymentRouter.js';
+import healthProfileRoutes from '../src/routes/healthProfileRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -54,6 +55,7 @@ connectDB();
 app.use('/api/auth', authRoutes);
 app.use('/api/password', passwordRoutes);
 app.use('/api/payment', paymentRouter);
+app.use('/api/health-profile', healthProfileRoutes);
 
 // Base route for API health check
 app.get('/', (req, res) => {
