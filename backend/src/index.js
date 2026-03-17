@@ -9,6 +9,7 @@ import passwordRoutes from './routes/passwordRoutes.js';
 import paymentRouter from './routes/paymentRouter.js';
 import healthProfileRoutes from './routes/healthProfileRoutes.js';
 import wellnessRoutes from './routes/wellnessRoutes.js';
+import cookieParser from 'cookie-parser';
 
 // Load environment variables
 dotenv.config();
@@ -43,9 +44,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Explicitly handle preflight for all routes (required for Vercel serverless)
 app.options('*', cors());
 app.use(express.json());
+app.use(cookieParser());
 
 // Logging middleware
 if (config.nodeEnv === 'development') {

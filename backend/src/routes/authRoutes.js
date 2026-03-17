@@ -15,7 +15,8 @@ import {
     getDoctorProfile,
     updateDoctorProfile,
     cancelSubscription,
-    googleLogin
+    googleLogin,
+    logoutUser
 } from '../controllers/authController.js';
 
 import { BarcodeSearchResult } from '../controllers/foodDetails.js';
@@ -52,6 +53,11 @@ router.post(
 // @desc    Authenticate user via Google OAuth
 // @access  Public
 router.post('/google', googleLogin);
+
+// @route   POST /api/auth/logout
+// @desc    Logout user/doctor
+// @access  Public
+router.post('/logout', logoutUser);
 
 // @route   GET /api/auth/profile
 // @desc    Get user profile

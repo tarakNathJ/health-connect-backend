@@ -44,7 +44,7 @@ export const registerUser = async (req, res) => {
                 email: user.email,
                 isAdmin: user.isAdmin,
                 tier: user.tier,
-                token: generateToken(user._id),
+                token: generateToken(res, user._id),
             });
         } else {
             res.status(400).json({ message: 'Invalid user data' });
@@ -82,7 +82,7 @@ export const loginUser = async (req, res) => {
                 isAdmin: user.isAdmin,
                 tier: user.tier,
                 appointmentCredits: user.appointmentCredits,
-                token: generateToken(user._id),
+                token: generateToken(res, user._id),
             });
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
@@ -149,7 +149,7 @@ export const updateUserProfile = async (req, res) => {
                 profileImage: updatedUser.profileImage,
                 tier: updatedUser.tier,
                 createdAt: updatedUser.createdAt,
-                token: generateToken(updatedUser._id),
+                token: generateToken(res, updatedUser._id),
             });
         } else {
             res.status(404).json({ message: 'User not found' });
@@ -187,7 +187,7 @@ export const updateUserTier = async (req, res) => {
                 email: updatedUser.email,
                 isAdmin: updatedUser.isAdmin,
                 tier: updatedUser.tier,
-                token: generateToken(updatedUser._id),
+                token: generateToken(res, updatedUser._id),
             });
         } else {
             console.log('[TIER UPDATE] User not found with ID:', req.user?._id);
@@ -302,7 +302,7 @@ export const registerDoctor = async (req, res) => {
                 email: createDoctorAccount.email,
                 isAdmin: createDoctorAccount.isAdmin,
                 tier: createDoctorAccount.tier,
-                token: generateToken(createDoctorAccount._id),
+                token: generateToken(res, createDoctorAccount._id),
             });
         } else {
             res.status(400).json({ message: 'Invalid user data' });
@@ -333,11 +333,10 @@ export const loginDoctor = async (req, res) => {
         const doctor = await Doctor.findOne({ email: email });
 
 
-        // Check if user exists and password matches
         if (doctor && (await doctor.matchPassword(password))) {
             res.status(200).json({
                 doctor: doctor,
-                token: generateToken(doctor._id),
+                token: generateToken(res, doctor._id),
             });
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
@@ -562,7 +561,7 @@ export const googleLogin = async (req, res) => {
                 isAdmin: user.isAdmin,
                 profileImage: user.profileImage || picture,
                 tier: user.tier || 'free',
-                token: generateToken(user._id),
+                token: generateToken(res, user._id),
                 message: 'Successfully logged in with Google',
             });
         } else {
@@ -584,7 +583,7 @@ export const googleLogin = async (req, res) => {
                     isAdmin: user.isAdmin,
                     profileImage: user.profileImage,
                     tier: user.tier,
-                    token: generateToken(user._id),
+                    token: generateToken(res, user._id),
                     message: 'Successfully registered and logged in with Google',
                 });
             } else {
@@ -594,5 +593,25 @@ export const googleLogin = async (req, res) => {
     } catch (error) {
         console.error('Error in googleLogin:', error);
         res.status(500).json({ message: 'Server verification failed connecting to Google' });
+    }
+};
+
+/**
+ * @description Logout user / doctor
+ * @route POST /api/auth/logout
+ * @access Public
+ */
+export const logoutUser = async (req, res) => {
+    try {
+        res.clearCookie('token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        });
+        
+        res.status(200).json({ message: 'Successfully logged out' });
+    } catch (error) {
+        console.error('Error in logoutUser:', error);
+        res.status(500).json({ message: 'Server error during logout' });
     }
 };
