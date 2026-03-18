@@ -25,6 +25,7 @@ const PORT = config.port;
 const allowedOrigins = [
     'https://medibridgeofficial.vercel.app',
     'https://health-connect-app-main.vercel.app',
+    'https://medibridge.qzz.io',
     'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:8080',
