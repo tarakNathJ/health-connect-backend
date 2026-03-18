@@ -13,6 +13,8 @@ import cookieParser from 'cookie-parser';
 
 // Load environment variables
 dotenv.config();
+const app = express();
+const PORT = config.port;
 
 // Connect to MongoDB via middleware
 app.use(async (req, res, next) => {
@@ -24,8 +26,6 @@ app.use(async (req, res, next) => {
     }
 });
 
-const app = express();
-const PORT = config.port;
 
 // Middleware
 // Allowed origins — add new deployment URLs here
@@ -48,8 +48,9 @@ const corsOptions = {
         return callback(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
+    exposedHeaders: ['Set-Cookie'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
 
 app.use(cors(corsOptions));
