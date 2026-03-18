@@ -21,8 +21,8 @@ const generateToken = (res, id) => {
 
     res.cookie('token', token, {
         httpOnly: true,
-        secure: isProduction, // Use secure cookies in production
-        sameSite: isProduction ? 'none' : 'lax', // Required for cross-site cookies if domains differ
+        secure: true,      // Always true — Vercel always serves over HTTPS
+        sameSite: 'none',  // Required for cross-site cookie (medibridge.qzz.io → backend.vercel.app)
         maxAge: cookieExpiration,
     });
 

@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import connectDB from '../src/config/db.js';
 import authRoutes from '../src/routes/authRoutes.js';
 import passwordRoutes from '../src/routes/passwordRoutes.js';
@@ -44,6 +45,7 @@ app.use(cors({
 app.options('*', cors());
 
 app.use(express.json());
+app.use(cookieParser()); // Required to read HttpOnly cookies from incoming requests
 
 // Logging middleware in development
 if (process.env.NODE_ENV !== 'production') {
