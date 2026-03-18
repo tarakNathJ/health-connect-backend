@@ -14,16 +14,6 @@ import cookieParser from 'cookie-parser';
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB via middleware
-app.use(async (req, res, next) => {
-    try {
-        await connectDB();
-        next();
-    } catch (error) {
-        next(error);
-    }
-});
-
 const app = express();
 const PORT = config.port;
 
@@ -74,17 +64,18 @@ app.get('/', (req, res) => {
     res.send('MediBridge API is running...');
 });
 
-// // Error handling middleware
-// app.use((err, req, res, next) => {
-//     const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
-//     res.status(statusCode);
-//     res.json({
-//         message: err.message,
-//         stack: config.nodeEnv === 'production' ? null : err.stack,
-//     });
-// });
 
-// Start server
+
+await connectDB().then(()=>{
+   console.log("db connect")
+}).catch((error )=>{
+ 
+    console.log(error);
+    process.exit(1)
+
+});
+
+
 app.listen(PORT, () => {
     console.log(`Server running in ${config.nodeEnv} mode on port ${PORT}`);
 }); 
