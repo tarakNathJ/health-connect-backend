@@ -27,7 +27,7 @@ const allowedOrigins = [
     'http://localhost:8080',
 ];
 
-app.use(cors({
+const corsOptions = {
     origin: (origin, callback) => {
         // Allow Postman / server-to-server (no origin header)
         if (!origin) return callback(null, true);
@@ -39,10 +39,12 @@ app.use(cors({
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+};
 
-// Explicitly handle preflight for every route
-app.options('*', cors());
+app.use(cors(corsOptions));
+
+// Explicitly handle preflight for every route (must use same options!)
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser()); // Required to read HttpOnly cookies from incoming requests
