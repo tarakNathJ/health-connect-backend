@@ -54,8 +54,15 @@ if (process.env.NODE_ENV !== 'production') {
     app.use(morgan('dev'));
 }
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB via middleware to ensure connection in serverless environment
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
